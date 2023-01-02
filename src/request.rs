@@ -1,0 +1,142 @@
+//! Gemini Request
+//!
+//! The gemini request contains all the information needed to handle a request.
+
+use std::{collections::HashMap, env};
+
+use chrono::{DateTime, FixedOffset};
+
+use crate::error::GemError;
+
+/// Client Certificate
+///
+/// [hash][Certificate::hash] is the primary identifyer for the certificate, you
+/// can get information about the certificate from [subject](Certificate::subject),
+/// and you can determine wether the certificate is valid if the date is between
+/// [not_before](Certificate::not_before) and [not_after](Certificate::not_after).
+pub struct Certificate {
+    /// The identifying token for the certificate
+    pub hash: String,
+    /// Information about the issuing certificate. This should be the same as
+    /// subject. subject is prefered
+    pub issuer: HashMap<String, String>,
+    /// Information about the certificate.
+    pub subject: HashMap<String, String>,
+    /// The time when the certificate expires
+    pub not_after: DateTime<FixedOffset>,
+    /// The time when the certificate was created
+    pub not_before: DateTime<FixedOffset>,
+}
+
+/// Information about a request
+pub struct Request {
+    /// URL Path relative to the script
+    pub path: String,
+    /// URL Path of the script
+    pub script: String,
+    /// Query component of the URL
+    pub query: String,
+    /// Server component of the URL
+    pub server_name: String,
+    /// Port component of the URL
+    pub server_port: u16,
+    /// Full URL
+    pub url: String,
+    /// IP address of the client
+    pub remote_addr: String,
+    /// FQDN of the client (if unresolvable, will be the same as remote_addr)
+    pub remote_host: String,
+    /// The protocol of the URL (should always be "GEMINI")
+    pub protocol: String,
+    /// The client certificate if one was provided
+    pub client_cert: Option<Certificate>,
+}
+
+/// Parse an X.509 Name into a hashmap.
+pub(crate) fn parse_client_name(
+    name: impl AsRef<str>,
+) -> Result<HashMap<String, String>, GemError> {
+    let mut mapping = HashMap::new();
+    for group in name.as_ref().split(',') {
+        if let Some((k, v)) = group.split_once('=') {
+            mapping.insert(k.to_owned(), v.to_owned());
+        } else {
+            return Err(GemError::bad_cert("Invalid X.509 Name"));
+        }
+    }
+    Ok(mapping)
+}
+
+/// Get the request for a CGI program
+///
+/// This will collect all of the CGI environment variables into a Request
+/// object.
+pub(crate) fn cgi_request() -> Result<Request, GemError> {
+    fn get_var(key: &str) -> Result<String, GemError> {
+        env::var(key).map_err(GemError::bad_params_err)
+    }
+
+    let path = get_var("PATH_INFO")?;
+    let script = get_var("SCRIPT_NAME")?;
+    let server = get_var("SERVER_NAME")?;
+    let query = get_var("QUERY_STRING")?;
+    let port: u16 = get_var("SERVER_PORT")?
+        .parse()
+        .map_err(|e| GemError::bad_params_err(e))?;
+    let url = get_var("GEMINI_URL")?;
+    let remote_addr = get_var("REMOTE_ADDR")?;
+    let remote_host = get_var("REMOTE_HOST")?;
+    let protocol = get_var("SERVER_PROTOCOL")?;
+
+    let cert = if env::var("AUTH_TYPE").unwrap_or("".to_owned()) == "CERTIFICATE" {
+        let hash = get_var("TLS_CLIENT_HASH")?;
+        let issuer = get_var("TLS_CLIENT_ISSUER")?;
+        let subject = get_var("TLS_CLIENT_SUBJECT")?;
+        let not_after = get_var("TLS_CLIENT_NOT_AFTER")?;
+        let not_before = get_var("TLS_CLIENT_NOT_BEFORE")?;
+        let not_after = DateTime::parse_from_rfc3339(&not_after).unwrap();
+        let not_before = DateTime::parse_from_rfc3339(&not_before).unwrap();
+        Some(Certificate {
+            hash,
+            not_before,
+            not_after,
+            issuer: parse_client_name(issuer)?,
+            subject: parse_client_name(subject)?,
+        })
+    } else {
+        None
+    };
+
+    Ok(Request {
+        path,
+        script,
+        query,
+        server_name: server,
+        server_port: port,
+        url,
+        remote_addr,
+        remote_host,
+        protocol,
+        client_cert: cert,
+    })
+}
+
+#[cfg(test)]
+mod test {
+    use crate::error::GemErrorType;
+
+    use super::*;
+
+    #[test]
+    fn test_client_name_parse() {
+        let parsed = parse_client_name("CN=foobar").unwrap();
+        assert_eq!(parsed.get("CN").unwrap(), "foobar");
+
+        let parsed = parse_client_name("CN=foobar,OU=cheese").unwrap();
+        assert_eq!(parsed.get("CN").unwrap(), "foobar");
+        assert_eq!(parsed.get("OU").unwrap(), "cheese");
+
+        let err = parse_client_name("CN").expect_err("Expected Error");
+        assert_eq!(err.error_type, GemErrorType::BadCert);
+    }
+}
