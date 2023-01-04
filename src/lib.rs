@@ -20,11 +20,12 @@
 //! There are two kinds of applications that are available:
 //!
 //! * [Routed App](routed): Build an app with multiple pages
-//! * [Simple App](simple): Build an app with only one page
+//! * [Application](application): Build an app with only one page
 //!
 //! Once you have setup your app, you can start it using your preferred protocol.
 //!
 //! * [run_cgi](protocol::Cgi::run_cgi): Run a CGI application
+//! * [run_scgi](protocol::Scgi::run_scgi): Run a SCGI application
 //!
 //! ## Limitations
 //!
@@ -43,18 +44,18 @@
 //! * [X] Create multi-page app
 //! * [X] Create single-page app
 //! * [X] Implement CGI
-//! * [ ] Implement SCGI
-//! * [ ] Ability to raise error responses
-//! * [ ] Convert any error into a [GemError](error::GemError)
+//! * [X] Implement SCGI
+//! * [X] Ability to raise error responses
+//! * [X] Convert any error into a [GemError](error::GemError)
 //! * [ ] Reduce boilerplate with attribute macros
 //! * [ ] Implement FastCGI (If there are any servers that support it)
 //! * [ ] Implement any other commonly used CGI-like protocols in geminispace
 //! * [ ] Add support for handling authentication
 //! * [ ] Divide sections into features
 //!
+pub mod application;
 pub mod error;
 pub mod protocol;
 pub mod request;
 pub mod response;
 pub mod routed;
-pub mod simple;

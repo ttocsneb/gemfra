@@ -2,11 +2,24 @@
 //!
 //! The gemini request contains all the information needed to handle a request.
 
-use std::{collections::HashMap, env};
+use std::collections::HashMap;
 
 use chrono::{DateTime, FixedOffset};
 
-use crate::error::GemError;
+use crate::error::{GemError, ToGemError};
+
+/// Parse an X.509 Name into a hashmap.
+fn parse_client_name(name: impl AsRef<str>) -> Result<HashMap<String, String>, GemError> {
+    let mut mapping = HashMap::new();
+    for group in name.as_ref().split(',') {
+        if let Some((k, v)) = group.split_once('=') {
+            mapping.insert(k.to_owned(), v.to_owned());
+        } else {
+            return Err(GemError::bad_cert("Invalid X.509 Name"));
+        }
+    }
+    Ok(mapping)
+}
 
 /// Client Certificate
 ///
@@ -26,6 +39,28 @@ pub struct Certificate {
     pub not_after: DateTime<FixedOffset>,
     /// The time when the certificate was created
     pub not_before: DateTime<FixedOffset>,
+}
+
+impl Certificate {
+    pub fn parse_cert<F>(get_var: F) -> Result<Self, GemError>
+    where
+        F: Fn(&str) -> Result<String, GemError>,
+    {
+        let hash = get_var("TLS_CLIENT_HASH")?;
+        let issuer = get_var("TLS_CLIENT_ISSUER")?;
+        let subject = get_var("TLS_CLIENT_SUBJECT")?;
+        let not_after = get_var("TLS_CLIENT_NOT_AFTER")?;
+        let not_before = get_var("TLS_CLIENT_NOT_BEFORE")?;
+        let not_after = DateTime::parse_from_rfc3339(&not_after).unwrap();
+        let not_before = DateTime::parse_from_rfc3339(&not_before).unwrap();
+        Ok(Self {
+            hash,
+            not_before,
+            not_after,
+            issuer: parse_client_name(issuer)?,
+            subject: parse_client_name(subject)?,
+        })
+    }
 }
 
 /// Information about a request
@@ -52,73 +87,40 @@ pub struct Request {
     pub client_cert: Option<Certificate>,
 }
 
-/// Parse an X.509 Name into a hashmap.
-pub(crate) fn parse_client_name(
-    name: impl AsRef<str>,
-) -> Result<HashMap<String, String>, GemError> {
-    let mut mapping = HashMap::new();
-    for group in name.as_ref().split(',') {
-        if let Some((k, v)) = group.split_once('=') {
-            mapping.insert(k.to_owned(), v.to_owned());
+impl Request {
+    pub fn parse_request<F>(get_var: F) -> Result<Self, GemError>
+    where
+        F: Fn(&str) -> Result<String, GemError>,
+    {
+        let path = get_var("PATH_INFO")?;
+        let script = get_var("SCRIPT_NAME")?;
+        let server = get_var("SERVER_NAME")?;
+        let query = get_var("QUERY_STRING")?;
+        let port: u16 = get_var("SERVER_PORT")?.parse().into_gem()?;
+        let url = get_var("GEMINI_URL")?;
+        let remote_addr = get_var("REMOTE_ADDR")?;
+        let remote_host = get_var("REMOTE_HOST")?;
+        let protocol = get_var("SERVER_PROTOCOL")?;
+
+        let cert = if get_var("AUTH_TYPE").unwrap_or("".to_owned()) == "CERTIFICATE" {
+            Some(Certificate::parse_cert(get_var)?)
         } else {
-            return Err(GemError::bad_cert("Invalid X.509 Name"));
-        }
-    }
-    Ok(mapping)
-}
+            None
+        };
 
-/// Get the request for a CGI program
-///
-/// This will collect all of the CGI environment variables into a Request
-/// object.
-pub(crate) fn cgi_request() -> Result<Request, GemError> {
-    fn get_var(key: &str) -> Result<String, GemError> {
-        env::var(key).map_err(GemError::bad_params_err)
-    }
-
-    let path = get_var("PATH_INFO")?;
-    let script = get_var("SCRIPT_NAME")?;
-    let server = get_var("SERVER_NAME")?;
-    let query = get_var("QUERY_STRING")?;
-    let port: u16 = get_var("SERVER_PORT")?
-        .parse()
-        .map_err(|e| GemError::bad_params_err(e))?;
-    let url = get_var("GEMINI_URL")?;
-    let remote_addr = get_var("REMOTE_ADDR")?;
-    let remote_host = get_var("REMOTE_HOST")?;
-    let protocol = get_var("SERVER_PROTOCOL")?;
-
-    let cert = if env::var("AUTH_TYPE").unwrap_or("".to_owned()) == "CERTIFICATE" {
-        let hash = get_var("TLS_CLIENT_HASH")?;
-        let issuer = get_var("TLS_CLIENT_ISSUER")?;
-        let subject = get_var("TLS_CLIENT_SUBJECT")?;
-        let not_after = get_var("TLS_CLIENT_NOT_AFTER")?;
-        let not_before = get_var("TLS_CLIENT_NOT_BEFORE")?;
-        let not_after = DateTime::parse_from_rfc3339(&not_after).unwrap();
-        let not_before = DateTime::parse_from_rfc3339(&not_before).unwrap();
-        Some(Certificate {
-            hash,
-            not_before,
-            not_after,
-            issuer: parse_client_name(issuer)?,
-            subject: parse_client_name(subject)?,
+        Ok(Self {
+            path,
+            script,
+            query,
+            server_name: server,
+            server_port: port,
+            url,
+            remote_addr,
+            remote_host,
+            protocol,
+            client_cert: cert,
         })
-    } else {
-        None
-    };
-
-    Ok(Request {
-        path,
-        script,
-        query,
-        server_name: server,
-        server_port: port,
-        url,
-        remote_addr,
-        remote_host,
-        protocol,
-        client_cert: cert,
-    })
+    }
 }
 
 #[cfg(test)]

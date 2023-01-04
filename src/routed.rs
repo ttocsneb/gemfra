@@ -19,7 +19,7 @@
 //!         "/myroute/:var"
 //!     }
 //!
-//!     async fn handle(&self, params: &Params, request: Request) -> Result<Response, Box<dyn Error>> {
+//!     async fn handle(&self, params: &Params, request: Request) -> Result<Response, Box<dyn Error + Send + Sync>> {
 //!         let var = params.find("var").unwrap();
 //!
 //!         Ok(Response::success("text/gemini", format!("You've found {var}")))
@@ -45,7 +45,7 @@
 //! #     fn endpoint(&self) -> &str {
 //! #         "/myroute/:var"
 //! #     }
-//! #    async fn handle(&self, params: &Params, request: Request) -> Result<Response, Box<dyn Error>> {
+//! #    async fn handle(&self, params: &Params, request: Request) -> Result<Response, Box<dyn Error + Send + Sync>> {
 //! #        let var = params.find("var").unwrap();
 //! #        Ok(Response::success("text/gemini", format!("You've found {var}")))
 //! #   }
@@ -59,13 +59,10 @@
 //!
 
 use async_trait::async_trait;
-use std::error::Error;
-use std::io;
 
-use crate::error::GemError;
-use crate::protocol::Cgi;
-use crate::request::{cgi_request, Request};
+use crate::request::Request;
 use crate::response::Response;
+use crate::{application::Application, error::AnyError};
 
 use route_recognizer::{Params, Router};
 
@@ -87,7 +84,7 @@ use route_recognizer::{Params, Router};
 ///         "/myroute/:var"
 ///     }
 ///
-///     async fn handle(&self, params: &Params, request: Request) -> Result<Response, Box<dyn Error>> {
+///     async fn handle(&self, params: &Params, request: Request) -> Result<Response, Box<dyn Error + Send + Sync>> {
 ///         let var = params.find("var").unwrap();
 ///
 ///         Ok(Response::success("text/gemini", format!("You've found {var}")))
@@ -115,7 +112,7 @@ pub trait Route {
     /// response will be a CGI Error.
     ///
     /// params are the path parameters that were requested when registering the route
-    async fn handle(&self, params: &Params, request: Request) -> Result<Response, Box<dyn Error>>;
+    async fn handle(&self, params: &Params, request: Request) -> Result<Response, AnyError>;
 }
 
 /// An application that can have multiple endpoints
@@ -123,15 +120,13 @@ pub trait Route {
 /// Endpoints are registered using [register](RoutedApp::register) where each
 /// endpoint refers to a different [Route].
 ///
-/// Once the app is setup, you can start it using the following commands:
-///
-/// * [run_cgi](RoutedApp::run_cgi): Run a cgi application
-/// * __todo__: More application types need to be developped
-pub struct RoutedApp<'a> {
-    router: Router<&'a (dyn Route + Send + Sync)>,
+/// Once the app is setup, you can start it with a protocol command, see
+/// [protocol](crate::protocol).
+pub struct RoutedApp {
+    router: Router<&'static (dyn Route + Send + Sync)>,
 }
 
-impl<'a> RoutedApp<'a> {
+impl RoutedApp {
     /// Create a new routed capsule
     #[inline]
     pub fn new() -> Self {
@@ -142,53 +137,24 @@ impl<'a> RoutedApp<'a> {
 
     /// Register a route to the app.
     #[inline]
-    pub fn register(&mut self, route: &'a (dyn Route + Send + Sync)) {
+    pub fn register(&mut self, route: &'static (dyn Route + Send + Sync)) {
         self.router.add(route.endpoint(), route)
     }
 }
 
 #[async_trait]
-impl<'a> Cgi for RoutedApp<'a> {
-    async fn run_cgi(self) {
-        async fn send_response(response: Response) {
-            if let Err(err) = response.send_sync(&mut io::stdout()).await {
-                eprintln!("{err}");
-            }
-        }
-
-        let request = match cgi_request() {
-            Ok(request) => request,
-            Err(err) => {
-                eprintln!("{err}");
-                send_response(err.into()).await;
-                return;
-            }
-        };
-
+impl Application for RoutedApp {
+    async fn handle_request(&self, request: Request) -> Result<Response, AnyError> {
         let route = match self.router.recognize(&request.path) {
             Ok(val) => val,
             Err(_) => {
-                // There was no route found for the endpoint
-                send_response(Response::not_found("Path not found")).await;
-                return;
+                return Ok(Response::not_found("Path not found"));
             }
         };
 
         let params = route.params();
         let handler = **route.handler();
-        let response = match handler.handle(params, request).await {
-            Ok(result) => result,
-            Err(err) => {
-                // There was an error
-                eprintln!("{err}");
-                // If the error was a GemError, it can be converted into a response
-                match err.downcast::<GemError>() {
-                    Ok(err) => Response::from(*err),
-                    Err(err) => Response::error_cgi(err.to_string()),
-                }
-            }
-        };
 
-        send_response(response).await;
+        handler.handle(params, request).await
     }
 }

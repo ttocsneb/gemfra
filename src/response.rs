@@ -49,7 +49,7 @@ enum ResponseBody {
 /// * __59__ [bad_request][Response::bad_request] Unable to parse request
 /// * __60__ [cert_required][Response::cert_required] Certificate is required
 /// * __61__ [cert_not_authorised][Response::cert_not_authorised] Certificate not authorised
-/// * __62__ [cert_not_valid][Response::cert_not_valid] Certificate is required
+/// * __62__ [cert_not_valid][Response::cert_not_valid] Certificate is invalid
 pub struct Response {
     pub code: u32,
     pub meta: String,
