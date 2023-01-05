@@ -1,0 +1,230 @@
+Lit(
+    ExprLit {
+        attrs: [],
+        lit: Str(
+            LitStr {
+                token: "/",
+            },
+        ),
+    },
+)
+input:
+Fn(
+    ItemFn {
+        attrs: [],
+        vis: Inherited,
+        sig: Signature {
+            constness: None,
+            asyncness: Some(
+                Async,
+            ),
+            unsafety: None,
+            abi: None,
+            fn_token: Fn,
+            ident: Ident {
+                ident: "my_route",
+                span: #0 bytes(123..131),
+            },
+            generics: Generics {
+                lt_token: None,
+                params: [],
+                gt_token: None,
+                where_clause: None,
+            },
+            paren_token: Paren,
+            inputs: [
+                Typed(
+                    PatType {
+                        attrs: [],
+                        pat: Ident(
+                            PatIdent {
+                                attrs: [],
+                                by_ref: None,
+                                mutability: None,
+                                ident: Ident {
+                                    ident: "request",
+                                    span: #0 bytes(132..139),
+                                },
+                                subpat: None,
+                            },
+                        ),
+                        colon_token: Colon,
+                        ty: Path(
+                            TypePath {
+                                qself: None,
+                                path: Path {
+                                    leading_colon: None,
+                                    segments: [
+                                        PathSegment {
+                                            ident: Ident {
+                                                ident: "Request",
+                                                span: #0 bytes(141..148),
+                                            },
+                                            arguments: None,
+                                        },
+                                    ],
+                                },
+                            },
+                        ),
+                    },
+                ),
+            ],
+            variadic: None,
+            output: Type(
+                RArrow,
+                Path(
+                    TypePath {
+                        qself: None,
+                        path: Path {
+                            leading_colon: None,
+                            segments: [
+                                PathSegment {
+                                    ident: Ident {
+                                        ident: "Result",
+                                        span: #0 bytes(153..159),
+                                    },
+                                    arguments: AngleBracketed(
+                                        AngleBracketedGenericArguments {
+                                            colon2_token: None,
+                                            lt_token: Lt,
+                                            args: [
+                                                Type(
+                                                    Path(
+                                                        TypePath {
+                                                            qself: None,
+                                                            path: Path {
+                                                                leading_colon: None,
+                                                                segments: [
+                                                                    PathSegment {
+                                                                        ident: Ident {
+                                                                            ident: "Response",
+                                                                            span: #0 bytes(160..168),
+                                                                        },
+                                                                        arguments: None,
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ),
+                                                ),
+                                                Comma,
+                                                Type(
+                                                    Path(
+                                                        TypePath {
+                                                            qself: None,
+                                                            path: Path {
+                                                                leading_colon: None,
+                                                                segments: [
+                                                                    PathSegment {
+                                                                        ident: Ident {
+                                                                            ident: "AnyError",
+                                                                            span: #0 bytes(170..178),
+                                                                        },
+                                                                        arguments: None,
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ),
+                                                ),
+                                            ],
+                                            gt_token: Gt,
+                                        },
+                                    ),
+                                },
+                            ],
+                        },
+                    },
+                ),
+            ),
+        },
+        block: Block {
+            brace_token: Brace,
+            stmts: [
+                Expr(
+                    Call(
+                        ExprCall {
+                            attrs: [],
+                            func: Path(
+                                ExprPath {
+                                    attrs: [],
+                                    qself: None,
+                                    path: Path {
+                                        leading_colon: None,
+                                        segments: [
+                                            PathSegment {
+                                                ident: Ident {
+                                                    ident: "Ok",
+                                                    span: #0 bytes(186..188),
+                                                },
+                                                arguments: None,
+                                            },
+                                        ],
+                                    },
+                                },
+                            ),
+                            paren_token: Paren,
+                            args: [
+                                Call(
+                                    ExprCall {
+                                        attrs: [],
+                                        func: Path(
+                                            ExprPath {
+                                                attrs: [],
+                                                qself: None,
+                                                path: Path {
+                                                    leading_colon: None,
+                                                    segments: [
+                                                        PathSegment {
+                                                            ident: Ident {
+                                                                ident: "Response",
+                                                                span: #0 bytes(189..197),
+                                                            },
+                                                            arguments: None,
+                                                        },
+                                                        Colon2,
+                                                        PathSegment {
+                                                            ident: Ident {
+                                                                ident: "success",
+                                                                span: #0 bytes(199..206),
+                                                            },
+                                                            arguments: None,
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ),
+                                        paren_token: Paren,
+                                        args: [
+                                            Lit(
+                                                ExprLit {
+                                                    attrs: [],
+                                                    lit: Str(
+                                                        LitStr {
+                                                            token: "text/gemini",
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                            Comma,
+                                            Lit(
+                                                ExprLit {
+                                                    attrs: [],
+                                                    lit: Str(
+                                                        LitStr {
+                                                            token: "# Hello World!",
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                ),
+                            ],
+                        },
+                    ),
+                ),
+            ],
+        },
+    },
+)

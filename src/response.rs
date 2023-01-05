@@ -342,7 +342,8 @@ impl Response {
 
     /// Get the full header for this response
     pub fn header(&self) -> String {
-        format!("{} {}\r\n", self.code, self.meta)
+        let meta = self.meta.lines().next().unwrap();
+        format!("{} {}\r\n", self.code, meta)
     }
 
     /// Send the response to an async stream

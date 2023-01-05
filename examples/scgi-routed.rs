@@ -1,96 +1,62 @@
-use async_trait::async_trait;
 use gemfra::{
-    error::{AnyError, ToGemError},
-    protocol::Scgi,
-    request::Request,
-    response::Response,
-    routed::{Route, RoutedApp},
+    error::AnyError, protocol::Scgi, request::Request, response::Response, routed::RoutedApp,
 };
-use route_recognizer::Params;
+use gemfra_codegen::route;
 
-struct MainRoute;
-#[async_trait]
-impl Route for MainRoute {
-    fn endpoint(&self) -> &str {
-        "/"
-    }
-
-    async fn handle(&self, _params: &Params, request: Request) -> Result<Response, AnyError> {
-        let script = &request.script;
-        Ok(Response::success(
-            "text/gemini",
-            format!(
-                "# Hello World
+#[route("/")]
+async fn main_route(request: Request) -> Result<Response, AnyError> {
+    let script = &request.script;
+    Ok(Response::success(
+        "text/gemini",
+        format!(
+            "# Hello World
 
 Here is my example routed capsule!
 
 => {script}/people View your personal page
 => {script}/info/hello View some information on your request
 "
-            ),
-        ))
-    }
+        ),
+    ))
 }
 
-struct PersonRoute;
-#[async_trait]
-impl Route for PersonRoute {
-    fn endpoint(&self) -> &str {
-        "/people/:name"
-    }
-
-    async fn handle(&self, params: &Params, _request: Request) -> Result<Response, AnyError> {
-        let name = params.find("name").into_gem()?;
-
-        Ok(Response::success(
-            "text/gemini",
-            format!(
-                "# {name} - A custom page for you
+#[route("/people/:name")]
+async fn person_route(_request: Request, name: &str) -> Result<Response, AnyError> {
+    Ok(Response::success(
+        "text/gemini",
+        format!(
+            "# {name} - A custom page for you
 
 This page was curated specifically for you \"{name}\", Congrats!
 ",
-            ),
-        ))
+        ),
+    ))
+}
+
+#[route("/people")]
+async fn person_route_select(request: Request) -> Result<Response, AnyError> {
+    if let Some(query) = request.query {
+        Ok(Response::redirect(format!(
+            "{}{}/{}",
+            request.script, request.path, query
+        )))
+    } else {
+        Ok(Response::input("Enter your name"))
     }
 }
 
-struct PersonRouteSelect;
-#[async_trait]
-impl Route for PersonRouteSelect {
-    fn endpoint(&self) -> &str {
-        "/people"
-    }
+#[route("/info/*")]
+async fn info_route(request: Request) -> Result<Response, AnyError> {
+    let url = request.url;
+    let addr = request.remote_addr;
+    let host = request.remote_host;
+    let path = request.path;
+    let query = request.query.unwrap_or("".to_owned());
 
-    async fn handle(&self, _params: &Params, request: Request) -> Result<Response, AnyError> {
-        if !request.query.is_empty() {
-            Ok(Response::redirect(format!(
-                "{}{}/{}",
-                request.script, request.path, request.query
-            )))
-        } else {
-            Ok(Response::input("Enter your name"))
-        }
-    }
-}
-
-struct InfoRoute;
-#[async_trait]
-impl Route for InfoRoute {
-    fn endpoint(&self) -> &str {
-        "/info/*"
-    }
-
-    async fn handle(&self, _params: &Params, request: Request) -> Result<Response, AnyError> {
-        let url = request.url;
-        let addr = request.remote_addr;
-        let host = request.remote_host;
-        let path = request.path;
-        let query = request.query;
-
-        Ok(Response::success(
-            "text/gemini",
-            format!(
-                "# Info on your request
+    Ok(Response::success(
+        "text/gemini",
+        format!(
+            "# Info on your request
 
 Your IP is {addr}, with a host of {host}.
 
@@ -100,19 +66,18 @@ Relative to this cgi, you requested for '{path}'.
 
 Your query is '{query}'
 ",
-            ),
-        ))
-    }
+        ),
+    ))
 }
 
 #[tokio::main]
 async fn main() {
     let mut app = RoutedApp::new();
 
-    app.register(&MainRoute);
-    app.register(&PersonRouteSelect);
-    app.register(&PersonRoute);
-    app.register(&InfoRoute);
+    app.register(&main_route);
+    app.register(&person_route_select);
+    app.register(&person_route);
+    app.register(&info_route);
 
     app.run_scgi("127.0.0.1:8000").await.unwrap();
 }

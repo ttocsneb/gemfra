@@ -6,24 +6,17 @@
 //! You can create a route in the following way:
 //!
 //! ```
-//! use async_trait::async_trait;
-//! use std::error::Error;
-//! use gemfra::{routed::Route, request::Request, response::Response};
-//! use route_recognizer::Params;
+//! use gemfra::{
+//!     routed::Route,
+//!     request::Request,
+//!     response::Response,
+//!     error::AnyError
+//! };
+//! use gemfra_codegen::route;
 //!
-//! struct MyRoute;
-//!
-//! #[async_trait]
-//! impl Route for MyRoute {
-//!     fn endpoint(&self) -> &str {
-//!         "/myroute/:var"
-//!     }
-//!
-//!     async fn handle(&self, params: &Params, request: Request) -> Result<Response, Box<dyn Error + Send + Sync>> {
-//!         let var = params.find("var").unwrap();
-//!
-//!         Ok(Response::success("text/gemini", format!("You've found {var}")))
-//!     }
+//! #[route("/myroute/:var")]
+//! async fn my_route(request: Request, var: &str) -> Result<Response, AnyError> {
+//!     Ok(Response::success("text/gemini", format!("You've found {var}")))
 //! }
 //! ```
 //!
@@ -35,26 +28,17 @@
 //! You can then register your route with the app:
 //!
 //! ```
-//! # use async_trait::async_trait;
-//! # use std::error::Error;
-//! # use gemfra::{routed::Route, request::Request, response::Response};
-//! # use route_recognizer::Params;
-//! # struct MyRoute;
-//! # #[async_trait]
-//! # impl Route for MyRoute {
-//! #     fn endpoint(&self) -> &str {
-//! #         "/myroute/:var"
-//! #     }
-//! #    async fn handle(&self, params: &Params, request: Request) -> Result<Response, Box<dyn Error + Send + Sync>> {
-//! #        let var = params.find("var").unwrap();
-//! #        Ok(Response::success("text/gemini", format!("You've found {var}")))
-//! #   }
+//! # use gemfra::{routed::Route, request::Request, response::Response, error::AnyError};
+//! # use gemfra_codegen::route;
+//! # #[route("/myroute/:var")]
+//! # async fn my_route(request: Request, var: &str) -> Result<Response, AnyError> {
+//! #     Ok(Response::success("text/gemini", format!("You've found {var}")))
 //! # }
 //! use gemfra::routed::RoutedApp;
 //!
 //! let mut my_app = RoutedApp::new();
 //!
-//! my_app.register(&MyRoute);
+//! my_app.register(&my_route);
 //! ```
 //!
 
@@ -64,7 +48,7 @@ use crate::request::Request;
 use crate::response::Response;
 use crate::{application::Application, error::AnyError};
 
-use route_recognizer::{Params, Router};
+pub use route_recognizer::{Params, Router};
 
 /// A handler to an endpoint
 ///
@@ -89,6 +73,23 @@ use route_recognizer::{Params, Router};
 ///
 ///         Ok(Response::success("text/gemini", format!("You've found {var}")))
 ///     }
+/// }
+/// ```
+///
+/// You can instead use the route macro for a more simple route implementation
+///
+/// ```
+/// use gemfra::{
+///     routed::Route,
+///     request::Request,
+///     response::Response,
+///     error::AnyError
+/// };
+/// use gemfra_codegen::route;
+///
+/// #[route("/myroute/:var")]
+/// async fn my_route(request: Request, var: &str) -> Result<Response, AnyError> {
+///     Ok(Response::success("text/gemini", format!("You've found {var}")))
 /// }
 /// ```
 #[async_trait]

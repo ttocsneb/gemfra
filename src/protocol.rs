@@ -153,7 +153,6 @@ async fn read_scgi_request(conn: &mut TcpStream) -> Result<Request, Box<dyn Erro
 }
 
 async fn send_scgi_response(mut conn: TcpStream, response: Response) {
-    println!("{}\t{}", response.code, response.meta);
     if let Err(e) = response.send_async(&mut conn).await {
         eprintln!("Could not send body: {e}");
     }
@@ -218,23 +217,33 @@ pub trait Scgi: Application + Sized + Send + Sync + 'static {
 
             let self_ref = self_arc.clone();
             tokio::spawn(async move {
+                let mut path = None;
                 let response = match read_scgi_request(&mut conn).await {
-                    Ok(request) => match self_ref.handle_request(request).await {
-                        Ok(response) => response,
-                        Err(err) => {
-                            eprintln!("Error while handling request: {err}");
-                            match err.downcast::<GemError>() {
-                                Ok(err) => Response::from(*err),
-                                Err(_) => Response::error_cgi("Internal Server Error"),
+                    Ok(request) => {
+                        path = Some(request.path.clone());
+                        match self_ref.handle_request(request).await {
+                            Ok(response) => response,
+                            Err(err) => {
+                                eprintln!("Error while handling request: {err}");
+                                match err.downcast::<GemError>() {
+                                    Ok(err) => Response::from(*err),
+                                    Err(_) => Response::error_cgi("Internal Server Error"),
+                                }
                             }
                         }
-                    },
+                    }
                     Err(e) => {
                         eprintln!("Invalid SCGI header: {e}");
                         Response::error_cgi("Invalid CGI header")
                     }
                 };
 
+                println!(
+                    "{}\t{}\t{}",
+                    path.unwrap_or("".into()),
+                    response.code,
+                    response.meta
+                );
                 send_scgi_response(conn, response).await;
             });
         }

@@ -70,7 +70,7 @@ pub struct Request {
     /// URL Path of the script
     pub script: String,
     /// Query component of the URL
-    pub query: String,
+    pub query: Option<String>,
     /// Server component of the URL
     pub server_name: String,
     /// Port component of the URL
@@ -95,7 +95,13 @@ impl Request {
         let path = get_var("PATH_INFO")?;
         let script = get_var("SCRIPT_NAME")?;
         let server = get_var("SERVER_NAME")?;
-        let query = get_var("QUERY_STRING")?;
+        let query = match get_var("QUERY_STRING").ok() {
+            Some(v) => match v.is_empty() {
+                true => None,
+                false => Some(v),
+            },
+            None => None,
+        };
         let port: u16 = get_var("SERVER_PORT")?.parse().into_gem()?;
         let url = get_var("GEMINI_URL")?;
         let remote_addr = get_var("REMOTE_ADDR")?;

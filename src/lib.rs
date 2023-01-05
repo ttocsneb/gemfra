@@ -47,12 +47,14 @@
 //! * [X] Implement SCGI
 //! * [X] Ability to raise error responses
 //! * [X] Convert any error into a [GemError](error::GemError)
-//! * [ ] Reduce boilerplate with attribute macros
+//! * [X] Reduce boilerplate with attribute macros
+//! * [ ] Divide sections into features
+//! * [ ] Make sure the framework works with most servers
+//!
+//! ##### After a 0.1.0 release
+//!
 //! * [ ] Implement FastCGI (If there are any servers that support it)
 //! * [ ] Implement any other commonly used CGI-like protocols in geminispace
-//! * [ ] Add support for handling authentication
-//! * [ ] Divide sections into features
-//!
 pub mod application;
 pub mod error;
 pub mod protocol;
