@@ -4,10 +4,14 @@
 //! for each protocol to be executed in the same way regardless of the application
 //! that is used.
 
-use std::{collections::HashMap, env, error::Error, io, sync::Arc};
-
 use async_trait::async_trait;
+use std::{env, io};
+
+#[cfg(feature = "scgi")]
 use bytes::BytesMut;
+#[cfg(feature = "scgi")]
+use std::{collections::HashMap, error::Error, sync::Arc};
+#[cfg(feature = "scgi")]
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpStream, ToSocketAddrs},
@@ -20,12 +24,14 @@ use crate::{
     response::Response,
 };
 
+#[cfg(feature = "cgi")]
 async fn send_cgi_response(response: Response) {
     if let Err(err) = response.send_sync(&mut io::stdout()).await {
         eprintln!("Could not send response: {err}");
     };
 }
 
+#[cfg(feature = "cgi")]
 fn get_cgi_header(key: &str) -> Result<String, GemError> {
     env::var(key).into_gem()
 }
@@ -35,6 +41,7 @@ fn get_cgi_header(key: &str) -> Result<String, GemError> {
 /// Run the application using the CGI protocol. This is a one-shot program that
 /// gets request information from environment variables and sends the response
 /// to stdout.
+#[cfg(feature = "cgi")]
 #[async_trait]
 pub trait Cgi: Application + Sized + Send + Sync + 'static {
     /// Run the application using the CGI protocol. This is a one-shot program that
@@ -105,8 +112,10 @@ pub trait Cgi: Application + Sized + Send + Sync + 'static {
     }
 }
 
+#[cfg(feature = "cgi")]
 impl<A> Cgi for A where A: Application + Send + Sync + 'static {}
 
+#[cfg(feature = "scgi")]
 async fn read_scgi_request(conn: &mut TcpStream) -> Result<Request, Box<dyn Error + Send + Sync>> {
     // Read the length of the headers
     let mut buf = Vec::new();
@@ -152,6 +161,7 @@ async fn read_scgi_request(conn: &mut TcpStream) -> Result<Request, Box<dyn Erro
     })?)
 }
 
+#[cfg(feature = "scgi")]
 async fn send_scgi_response(mut conn: TcpStream, response: Response) {
     if let Err(e) = response.send_async(&mut conn).await {
         eprintln!("Could not send body: {e}");
@@ -166,6 +176,7 @@ async fn send_scgi_response(mut conn: TcpStream, response: Response) {
 /// SCGI is a simplification of the FastCGI protocol. It runs a tcp server where
 /// each connection to the server is a single CGI request. This allows for the
 /// reduction of time spent on setup/cleanup.
+#[cfg(feature = "scgi")]
 #[async_trait]
 pub trait Scgi: Application + Sized + Send + Sync + 'static {
     /// SCGI is a simplification of the FastCGI protocol. It runs a tcp server where
@@ -250,4 +261,5 @@ pub trait Scgi: Application + Sized + Send + Sync + 'static {
     }
 }
 
+#[cfg(feature = "scgi")]
 impl<A> Scgi for A where A: Application + Sized + Send + Sync + 'static {}

@@ -3,21 +3,47 @@ name = "gemfra"
 version = "0.1.0-dev"
 edition = "2021"
 
+license = "MIT"
+repository = "https://github.com/ttocsneb/gemfra"
+description = "A framework for writing gemini CGI scripts"
+authors = ["Benjamin Jacobs <benjammin1100@gmail.com>"]
+readme = "readme.md"
+categories = ["web-programming"]
+keywords = ["gemini", "cgi", "scgi"]
+resolver = "2"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[example]]
 name = "scgi-routed"
 path = "examples/scgi-routed.rs"
+required-features = ["routed", "scgi"]
+[[example]]
+name = "cgi-simple"
+path = "examples/cgi-simple.rs"
+required-features = ["cgi"]
 
 [dependencies]
 chrono = "0.4"
-route-recognizer = "0.3"
-urlencoding = "2"
 bytes = "1"
-tokio = { version = "1", features = ["io-util", "net", "rt"] }
+route-recognizer = { version = "0.3", optional = true }
+tokio = { version = "1", features = ["io-util"] }
 async-trait = "0.1"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
 tokio-test = "0.4"
 gemfra-codegen = { path = "gemfra-codegen" }
+
+[features]
+default = ["cgi"]
+# default = ["full"] # For linting
+full = ["cgi", "scgi", "routed"]
+routed = ["route-recognizer"]
+scgi = ["tokio/net", "tokio/rt"]
+cgi = []
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+# Test locally with `RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --all-features`

@@ -1,7 +1,16 @@
 [package]
 name = "gemfra-codegen"
-version = "0.1.0"
+version = "0.1.0-dev"
 edition = "2021"
+
+license = "MIT"
+repository = "https://github.com/ttocsneb/gemfra"
+description = "A collection of macros for use with the gemfra crate"
+authors = ["Benjamin Jacobs <benjammin1100@gmail.com>"]
+readme = "readme.md"
+categories = ["web-programming"]
+keywords = ["gemini", "cgi", "scgi"]
+resolver = "2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]

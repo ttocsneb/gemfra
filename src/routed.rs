@@ -3,14 +3,14 @@
 //! Use paths to serve multiple pages. You can create a [RoutedApp] then
 //! register [Route]s that your application will handle.
 //!
-//! You can create a route in the following way:
+//! You can create a route, then register it to a RoutedApp.
 //!
 //! ```
 //! use gemfra::{
-//!     routed::Route,
+//!     routed::RoutedApp,
 //!     request::Request,
 //!     response::Response,
-//!     error::AnyError
+//!     error::AnyError,
 //! };
 //! use gemfra_codegen::route;
 //!
@@ -18,28 +18,14 @@
 //! async fn my_route(request: Request, var: &str) -> Result<Response, AnyError> {
 //!     Ok(Response::success("text/gemini", format!("You've found {var}")))
 //! }
-//! ```
-//!
-//! > Currently there is a lot of boilerplate invovled in creating a route, but I
-//! > hope to reduce this by creating a directive that can convert a function into
-//! > a [Route] struct.
-//!
-//!
-//! You can then register your route with the app:
-//!
-//! ```
-//! # use gemfra::{routed::Route, request::Request, response::Response, error::AnyError};
-//! # use gemfra_codegen::route;
-//! # #[route("/myroute/:var")]
-//! # async fn my_route(request: Request, var: &str) -> Result<Response, AnyError> {
-//! #     Ok(Response::success("text/gemini", format!("You've found {var}")))
-//! # }
-//! use gemfra::routed::RoutedApp;
 //!
 //! let mut my_app = RoutedApp::new();
 //!
 //! my_app.register(&my_route);
 //! ```
+//!
+//! > In order to use the route macro, you will need to
+//! > include gemfra-codegen in your Cargo.toml file
 //!
 
 use async_trait::async_trait;

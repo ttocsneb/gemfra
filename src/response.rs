@@ -347,7 +347,7 @@ impl Response {
     }
 
     /// Send the response to an async stream
-    pub(crate) async fn send_async<W>(self, writer: &mut W) -> Result<(), io::Error>
+    pub async fn send_async<W>(self, writer: &mut W) -> Result<(), io::Error>
     where
         W: AsyncWrite + Unpin + ?Sized,
     {
@@ -376,7 +376,7 @@ impl Response {
     }
 
     /// Send the response to a sync stream
-    pub(crate) async fn send_sync<W>(self, writer: &mut W) -> Result<(), io::Error>
+    pub async fn send_sync<W>(self, writer: &mut W) -> Result<(), io::Error>
     where
         W: Write + ?Sized,
     {

@@ -26,38 +26,12 @@
 //!
 //! * [run_cgi](protocol::Cgi::run_cgi): Run a CGI application
 //! * [run_scgi](protocol::Scgi::run_scgi): Run a SCGI application
-//!
-//! ## Limitations
-//!
-//! Currently this software has only been tested with [stargazer](https://git.sr.ht/~zethra/stargazer)
-//! While protocol implementations should work across different softwares, it is
-//! possible if not likely that this software will break with different servers.
-//! If that is the case, please submit an issue or pull request. I would like
-//! this framework to be compatible with as many servers as possible.
-//!
-//! ## Roadmap
-//!
-//! This is the beginning of the project and there are several things that need
-//! to be implemented. Below is a list of what I would like to implement before
-//! considering a 0.1.0 release.
-//!
-//! * [X] Create multi-page app
-//! * [X] Create single-page app
-//! * [X] Implement CGI
-//! * [X] Implement SCGI
-//! * [X] Ability to raise error responses
-//! * [X] Convert any error into a [GemError](error::GemError)
-//! * [X] Reduce boilerplate with attribute macros
-//! * [ ] Divide sections into features
-//! * [ ] Make sure the framework works with most servers
-//!
-//! ##### After a 0.1.0 release
-//!
-//! * [ ] Implement FastCGI (If there are any servers that support it)
-//! * [ ] Implement any other commonly used CGI-like protocols in geminispace
+#![cfg_attr(doc, feature(doc_auto_cfg))]
+
 pub mod application;
 pub mod error;
 pub mod protocol;
 pub mod request;
 pub mod response;
+#[cfg(feature = "routed")]
 pub mod routed;
