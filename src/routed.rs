@@ -34,6 +34,7 @@ use crate::request::Request;
 use crate::response::Response;
 use crate::{application::Application, error::AnyError};
 
+pub use gemfra_codegen::route;
 pub use route_recognizer::{Params, Router};
 
 /// A handler to an endpoint
@@ -43,8 +44,11 @@ pub use route_recognizer::{Params, Router};
 /// ```
 /// use async_trait::async_trait;
 /// use std::error::Error;
-/// use gemfra::{routed::Route, request::Request, response::Response};
-/// use route_recognizer::Params;
+/// use gemfra::{
+///     routed::{Route, Params},
+///     request::Request,
+///     response::Response
+/// };
 ///
 /// struct MyRoute;
 ///
@@ -66,12 +70,11 @@ pub use route_recognizer::{Params, Router};
 ///
 /// ```
 /// use gemfra::{
-///     routed::Route,
+///     routed::route,
 ///     request::Request,
 ///     response::Response,
 ///     error::AnyError
 /// };
-/// use gemfra_codegen::route;
 ///
 /// #[route("/myroute/:var")]
 /// async fn my_route(request: Request, var: &str) -> Result<Response, AnyError> {

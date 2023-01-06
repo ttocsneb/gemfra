@@ -1,5 +1,5 @@
 [![crates-io](https://img.shields.io/crates/v/gemfra-codegen.svg)][crates-io]
-[![api-docs](https://docs.rs/mbon/gemfra-codegen.svg)][Documentation]
+[![api-docs](https://docs.rs/gemfra-codegen/badge.svg)][Documentation]
 
 [crates-io]: https://crates.io/crates/gemfra-codegen
 [Documentation]: https://docs.rs/gemfra-codegen

@@ -1,5 +1,5 @@
 [![crates-io](https://img.shields.io/crates/v/gemfra.svg)][crates-io]
-[![api-docs](https://docs.rs/mbon/gemfra.svg)][Documentation]
+[![api-docs](https://docs.rs/gemfra/badge.svg)][Documentation]
 
 [crates-io]: https://crates.io/crates/gemfra
 [Documentation]: https://docs.rs/gemfra

@@ -1,7 +1,10 @@
 use gemfra::{
-    error::AnyError, protocol::Scgi, request::Request, response::Response, routed::RoutedApp,
+    error::AnyError,
+    protocol::Scgi,
+    request::Request,
+    response::Response,
+    routed::{route, RoutedApp},
 };
-use gemfra_codegen::route;
 
 #[route("/")]
 async fn main_route(request: Request) -> Result<Response, AnyError> {
